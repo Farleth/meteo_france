@@ -1,44 +1,35 @@
 import streamlit as st
-import pandas as pd
+import requests
+import folium
+from streamlit_folium import folium_static
+from back import get_coordonner, get_weather_data
 
-st.set_page_config(layout="wide")
-col1, col2, col3 = st.columns(3)
+def main():
+    st.header("Find the Weather 🌥️")
+    city = st.text_input("Enter the city").lower()
+    if st.button('Find'):
+        longitude, latitude = get_coordonner(city)
+        general, temperature, max_temperature, feels_temp, humidity, icon = get_weather_data(longitude, latitude)
+        # Display map with city location
+        st.header("City Location on Map 🗺️")
+        map_center = [latitude, longitude]
+        m = folium.Map(location=map_center, zoom_start=10)
+        folium.Marker(map_center, popup=city.capitalize()).add_to(m)
+        folium_static(m)  # Display the map in Streamlit
 
-data = pd.read_csv("communes-departement-region.csv", sep=',')
-data = data[["nom_commune_postal", "latitude", "longitude"]].dropna()
+        st.header("The weather of your city:", city)
 
-with col3:
-    st.title("")
-    st.title("")
-    st.title("")
-    st.title("")
-    st.title("")
-    st.title("")
-    st.title("")
-    st.title("")
-    dropdown = st.selectbox("Choose your location", data["nom_commune_postal"].unique())
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric('Temperature', str(temperature)+'℃', str(max_temperature-temperature)+'℃')
+            #st.metric('Feels Like', str(feels_temp)+'℃')
+        with col2:
+            st.metric('Humidity', str(humidity)+'%')
+        with col3:
+            st.write(general)
+            st.image(icon)
 
+        st.header("WEATHAPP weather-location")
 
-with col2:
-    # Title
-    st.title("Météo app")
-
-    # Reactive block using @st.cache
-    @st.cache_data(hash_funcs={pd.DataFrame: id})
-    def get_map_data(selected_location):
-        return data[data["nom_commune_postal"] == selected_location]
-
-    map_data = get_map_data(dropdown)
-    st.map(data=map_data)
-
-    st.markdown(f"<h1 style='text-align: center;'>{dropdown}</h1>", unsafe_allow_html=True)
-    col2_1, col2_2, col2_3 = st.columns(3)
-
-    with col2_1:
-        st.metric("Temp", value=999, delta=3)
-
-    with col2_2:
-        st.metric("Wind", value=999)
-
-    with col2_3:
-        st.metric("Humidity", value=999)
+if __name__ == '__main__':
+    main()
